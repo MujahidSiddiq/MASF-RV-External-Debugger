@@ -6,15 +6,15 @@ You can view the complete specification [here](https://www.scs.stanford.edu/~zye
 
 ## Table of Contents
 
-1. [Project Goals](#project-goals)
-2. [Implemented Features](#implemented-features)
-3. [Block Diagram](#block-diagram)
-4. [State Machines](#state-machines)
-   - [Debug Module State Machine](#debug-module-state-machine)
-   - [Hart State Machine](#hart-state-machine)
-5. [Simulation Results](#simulation-results)
-6. [Challenges Faced](#challenges-faced)
-7. [Team](#team)
+1. [Project Goals](#1-project-goals)
+2. [Implemented Features](#2-implemented-features)
+3. [Block Diagram](#3-block-diagram)
+4. [State Machines](#4-state-machines)
+   - [Debug Module State Machine](#41-debug-module-state-machine)
+   - [Hart State Machine](#42-hart-state-machine)
+5. [Simulation Results](#5-simulation-results)
+6. [Challenges Faced](#6-challenges-faced)
+7. [Team](#7-team)
 
 ## 1. Project Goals
 
@@ -46,7 +46,7 @@ The block diagram below showcases the interaction between the **Debug Module (DM
 
 ## 4. State Machines
 
-- ### Debug Module State Machine
+- ### 4.1 Debug Module State Machine
 
   The main states are:
 
@@ -56,7 +56,7 @@ The block diagram below showcases the interaction between the **Debug Module (DM
 
   ![DM State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/DM_FSM.png)
 
-- ### Hart State Machine
+- ### 4.2 Hart State Machine
 
   The main states are:
 
