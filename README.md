@@ -16,7 +16,7 @@ You can view the complete specification [here](https://www.scs.stanford.edu/~zye
 6. [Challenges Faced](#challenges-faced)
 7. [Team](#team)
 
-## Project Goals
+## 1. Project Goals
 
 The project focuses on implementing critical debugging operations that help developers manage and inspect RISC-V processors during code execution. The core features targeted for this project are:
 
@@ -30,7 +30,7 @@ The project focuses on implementing critical debugging operations that help deve
 
 -_More features can be added as per project requirements._
 
-## Implemented Features
+## 2. Implemented Features
 
 Currently, the following debugging features have been successfully integrated into the **Debug Module (DM)** and **Hart**:
 
@@ -38,35 +38,35 @@ Currently, the following debugging features have been successfully integrated in
 - **Step**: Instruction-level debugging is enabled, allowing step-by-step code execution.
 - **Resume**: Execution resumes seamlessly from a halted state.
 
-## Block Diagram
+## 3. Block Diagram
 
 The block diagram below showcases the interaction between the **Debug Module (DM)** and the **Hart** during halt, step, and resume operations:
 
 ![Block Diagram](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/Block_Diagram.png)
 
-## State Machines
+## 4. State Machines
 
-### Debug Module State Machine
+- ### Debug Module State Machine
 
-The main states are:
+  The main states are:
 
-- **Non-Debug States**: DM is waiting for a halt request.
-- **Halt/Resume**: These states are using for Halting and Resuming. Also use for executing next instruction in stepping mode.
-- **Access Register Abstract Command**: These states are using for access registers with abstract command (like we use to access dcsr register for stepping).
+  - **Non-Debug States**: DM is waiting for a halt request.
+  - **Halt/Resume**: These states are using for Halting and Resuming. Also use for executing next instruction in stepping mode.
+  - **Access Register Abstract Command**: These states are using for access registers with abstract command (like we use to access dcsr register for stepping).
 
-![DM State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/DM_FSM.png)
+  ![DM State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/DM_FSM.png)
 
-### Hart State Machine
+- ### Hart State Machine
 
-The main states are:
+  The main states are:
 
-- **Non-Debug States**: DM is waiting for a halt request.
-- **Halt/Resume**: These states are using for Halting to enter in Debug Mode, and Resuming.
-- **Step**: These states are responsible for single step execution in Debug Mode.
+  - **Non-Debug States**: DM is waiting for a halt request.
+  - **Halt/Resume**: These states are using for Halting to enter in Debug Mode, and Resuming.
+  - **Step**: These states are responsible for single step execution in Debug Mode.
 
-![HART State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/HART_FSM.png)
+  ![HART State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/HART_FSM.png)
 
-## Simulation Results
+## 5. Simulation Results
 
 We have made significant advancements in the implementation of halt, stepping, and resuming functionality in both the **Debug Module (DM)** and **Hart**. Below is a summary of our simulation results:
 
@@ -82,7 +82,7 @@ We have made significant advancements in the implementation of halt, stepping, a
 
 Overall, the simulation is functioning as intended, aligning perfectly with the described flow.
 
-## Challenges Faced
+## 6. Challenges Faced
 
 During the development of **MASF-RV-External-Debugger**, we identified some problems in the **Debug Module (DM)**, especially with how it interacts with the **Debug Module Interface (DMI)**. These issues will be fixed in the future after the completion of the DM functionality:
 
@@ -92,7 +92,7 @@ During the development of **MASF-RV-External-Debugger**, we identified some prob
 
 Once these issues are resolved, it will improve the DM functionality and allow us to add more debugging features.
 
-## Team
+## 7. Team
 
 - **Project Leader: M. Mujahid Siddiq**  
   Contact: kingsflicker@gmail.com
