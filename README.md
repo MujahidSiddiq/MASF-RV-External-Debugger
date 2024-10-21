@@ -44,7 +44,7 @@ Currently, the following debugging features have been successfully integrated in
 
 The block diagram below showcases the interaction between the **Debug Module (DM)** and the **Hart** during halt, step, and resume operations:
 
-![Block Diagram](https://github.com/testwithmyself/test/blob/main/Project_Diagrams/Block_Diagram.png)
+![Block Diagram](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/Block_Diagram.png)
 
 ## State Machines
 
@@ -56,7 +56,7 @@ The main states are:
 - **Halt/Resume**: These states are using for Halting and Resuming. Also use for executing next instruction in stepping mode.
 - **Access Register Abstract Command**: These states are using for access registers with abstract command (like we use to access dcsr register for stepping).
 
-![DM State Machine](https://github.com/testwithmyself/test/blob/main/Project_Diagrams/DM_FSM.png)
+![DM State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/DM_FSM.png)
 
 ### Hart State Machine
 
@@ -66,7 +66,7 @@ The main states are:
 - **Halt/Resume**: These states are using for Halting to enter in Debug Mode, and Resuming.
 - **Step**: These states are responsible for single step execution in Debug Mode.
 
-![HART State Machine](https://github.com/testwithmyself/test/blob/main/Project_Diagrams/HART_FSM.png)
+![HART State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/HART_FSM.png)
 
 ## Simulation Results
 
