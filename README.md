@@ -1,8 +1,6 @@
 # MASF-RV-External-Debugger
 
-**MASF-RV-External-Debugger** is an external debugging tool designed for **RISC-V** architectures. It aims to provide developers with essential debugging features such as halting, stepping, breakpoints, and more, fully adhering to the RISC-V Debug Specification.
-
-This project follows the **RISC-V Debug Specification**, version **1.0**. This document explains how to implement debugging features for RISC-V systems.
+**"MASF-RV-External-Debugger"** project follows the **RISC-V Debug Specification**, version **1.0**. This document explains how to implement debugging features for RISC-V systems.
 
 You can view the complete specification [here](https://www.scs.stanford.edu/~zyedidia/docs/riscv/riscv-debug.pdf).
 
