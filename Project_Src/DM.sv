@@ -45,8 +45,8 @@ module DM (
     // Hardware-Thread
     input  logic                ht_halt_ack_i, 
     input  logic                ht_resume_ack_i,
-    input  logic                ht_stepping_i, 
-    input  logic                ht_first_step_exec_i,
+    input  logic                ht_ebreak_i, 
+    input  logic                ht_step_exec_i,
     inout  logic [31:0]         ht_rd_wr_data_io,
     output logic                ht_halt_req_o,
     output logic                ht_rd_wr_en_o, 
@@ -74,7 +74,7 @@ module DM (
     logic               all_running;
     logic               reset_dmcontrol;
     logic [31:0]        dmcontrol_reset_value; 
-    logic [2:0]         abstractcs_cmderr;
+    // logic [2:0]         abstractcs_cmderr;
     logic               abstractcs_busy;
     logic               wire_abstractcs_busy_cleared;
     logic               wire_dmi_req_valid_write;
@@ -99,7 +99,7 @@ module DM (
     logic               dmi_data0_mux_sel;
     logic [31:0]        dmi_data0_mux_out;
     logic               resume_req;
-
+    logic               rd_wr_en;
 
 
 
@@ -145,7 +145,7 @@ module DM (
         case (current_state)
             NORMAL_EXECUTION: begin
                 
-                if (dmcontrol_reg.haltreq & dmcontrol_reg.dmactive) begin
+                if ( (dmcontrol_reg.haltreq | ht_ebreak_i ) & (dmcontrol_reg.dmactive) ) begin
                     next_state = HALTING; 
                 end
             end
@@ -160,7 +160,7 @@ module DM (
 
             HALTED: begin
                 
-                if (resume_req | ht_first_step_exec_i) begin
+                if (resume_req | ht_step_exec_i) begin
                     next_state = RESUMING; 
                 end
                 else if ((!command_reg.cmdtype) & (valid_command)) begin
@@ -172,10 +172,10 @@ module DM (
 
             RESUMING: begin
             
-                if (ht_stepping_i | ht_first_step_exec_i) begin
+                if (ht_step_exec_i) begin
                     next_state = HALTING;
                 end
-                else if ((!ht_stepping_i) & (!ht_first_step_exec_i) & (ht_resume_ack_i)) begin
+                else if ( (!ht_step_exec_i) & (ht_resume_ack_i)) begin
                     next_state = NORMAL_EXECUTION;
                 end
             end
@@ -234,18 +234,21 @@ module DM (
                 all_halted              = 0;
                 all_running             = 1;
                 abstractcs_busy         = 0;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 0;
             
             end
 
             HALTING: begin
                 halt_req                = 1;
                 all_halted              = 0;
-                all_running             = 1;
+                all_running             = 0;
                 abstractcs_busy         = 0;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 0;
+
             end
 
             HALTED: begin
@@ -253,8 +256,9 @@ module DM (
                 all_halted              = 1;
                 all_running             = 0;
                 abstractcs_busy         = 0;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 0;
             
             end
 
@@ -263,8 +267,9 @@ module DM (
                 all_halted              = 1;
                 all_running             = 0;
                 abstractcs_busy         = 0;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 1;
+                rd_wr_en                = 0;
             end
 
             COMMAND_START: begin
@@ -272,8 +277,9 @@ module DM (
                 all_halted              = 1;
                 all_running             = 0;
                 abstractcs_busy         = 1;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 0;
             end
 
             COMMAND_TRANSFER: begin
@@ -281,8 +287,9 @@ module DM (
                 all_halted              = 1;
                 all_running             = 0;
                 abstractcs_busy         = 1;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 1;
             end
 
             COMMAND_DONE: begin
@@ -290,8 +297,9 @@ module DM (
                 all_halted              = 1;
                 all_running             = 0;
                 abstractcs_busy         = 1;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 0;
             end
 
 
@@ -300,25 +308,37 @@ module DM (
                 all_halted              = 0;
                 all_running             = 1;
                 abstractcs_busy         = 0;
-                abstractcs_cmderr       = 0;
+                // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                rd_wr_en                = 0;
             end
         endcase
     end
 
 
 
+// logic [31:0] concet_for_abstractcs;
+// assign concet_for_abstractcs = 
 
 
     // updating Registers
-    always @(posedge clk_i) begin
+    always @(posedge clk_i or negedge reset_i) begin
+
+        if(!reset_i) begin 
+            dmstatus_reg <= 0;
+            abstractcs_reg <= 0;
+
+        end
+        else begin
     
-        dmstatus_reg.allhalted              <=      all_halted;
-        dmstatus_reg.allrunning             <=      all_running;
-        dmstatus_reg.allresumeack           <=      ht_resume_ack_i;
-        abstractcs_reg.busy                 <=      abstractcs_busy;
-        abstractcs_reg.cmderr               <=      abstractcs_cmderr;  
-        valid_command                       <=      request_for_command;
+            dmstatus_reg.allhalted              <=      all_halted;
+            dmstatus_reg.allrunning             <=      all_running;
+            dmstatus_reg.allresumeack           <=      ht_resume_ack_i;
+            abstractcs_reg.busy                 <=      abstractcs_busy;
+            // abstractcs_reg.cmderr               <=      abstractcs_cmderr;  
+            valid_command                       <=      request_for_command;
+
+        end
 
     
     end
@@ -356,7 +376,7 @@ module DM (
     assign ht_rd_wr_o                       =       command_reg.write;
     assign ht_rd_wr_address_o               =       command_reg.regno[15:0];
     assign ht_rd_wr_data_io                 =       command_reg.write ? data_reg[0] : 32'bz;
-    assign ht_rd_wr_en_o                    =       abstractcs_reg.busy & command_reg.transfer;
+    assign ht_rd_wr_en_o                    =       rd_wr_en & command_reg.transfer;
     assign ht_halt_req_o                    =       halt_req;
 
 endmodule
