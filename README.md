@@ -23,10 +23,7 @@ The project focuses on implementing critical debugging operations that help deve
 - **Halt**: Pause the processor at any point in execution.
 - **Resume**: Continue execution from a halted state.
 - **Step**: Execute one instruction at a time for granular control.
-- **Software Breakpoints**: Dynamically insert breakpoints during execution.
-- **Hardware Breakpoints**: Utilize hardware support for memory-specific breakpoints.
-- **Memory Access**: Inspect and modify memory during runtime.
-- **Register Access**: Inspect and modify the CSRs.
+- **Breakpoints**: Dynamically insert breakpoints during execution.
 
 -_More features can be added as per project requirements._
 
@@ -36,12 +33,13 @@ Currently, the following debugging features have been successfully integrated in
 
 - **Halt**: The processor can be paused and controlled by the debugger.
 - **Step**: Instruction-level debugging is enabled, allowing step-by-step code execution.
+- **Breakpoint**: Execution halts at a specified instruction address, allowing the debugger to inspect and manipulate the system state.
 - **Resume**: Execution resumes seamlessly from a halted state.
 
 ## 3. Block Diagram
 
 The block diagram below showcases the interaction between the **Debug Module (DM)** and the **Hart** during halt, step, and resume operations:
-
+The block diagram below showcases the interaction between the **Debug Module (DM)**, the **Hart**, and the **RISC-V Pipeline Processor** during halt, breakpoint, step, and resume operations:
 ![Block Diagram](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/Block_Diagram.png)
 
 ## 4. State Machines
@@ -51,18 +49,22 @@ The block diagram below showcases the interaction between the **Debug Module (DM
   The main states are:
 
   - **Non-Debug States**: DM is waiting for a halt request.
-  - **Halt/Resume**: These states are using for Halting and Resuming. Also use for executing next instruction in stepping mode.
-  - **Access Register Abstract Command**: These states are using for access registers with abstract command (like we use to access dcsr register for stepping).
-
+  - **Halt/Resume**: These states are used for halting and resuming processor execution. They are also triggered when a set breakpoint is detected, and step operations occur in these states as well.
+  - **Access Register Abstract Command**: These states are used to access registers with abstract commands. For example:
+    - The **dcsr register** is accessed for Stepping and handling Break_Point.
+    - The **dscratch0 register** is accessed to store the PC value where a breakpoint is set.
+    - The **dpc register** is accessed to monitor the current value of the PC during Debug Operations.
   ![DM State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/DM_FSM.png)
 
 - ### 4.2 Hart State Machine
 
   The main states are:
 
-  - **Non-Debug States**: DM is waiting for a halt request.
+  - **Non-Debug States**: HarT is waiting for a halt request.
   - **Halt/Resume**: These states are using for Halting to enter in Debug Mode, and Resuming.
   - **Step**: These states are responsible for single step execution in Debug Mode.
+  - **Ebreak**: These states are responsible for Break_Point.
+
 
   ![HART State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/HART_FSM.png)
 
@@ -72,13 +74,15 @@ We have made significant advancements in the implementation of halt, stepping, a
 
 1. **Halt Request**: Setting the `haltreq` in `dmcontrol` successfully transitioned the Hart to a halted state and into Debug Mode, as anticipated.
 
-2. **Stepping Mode**: By setting the step bit in the `dcsr` register (via `data0` and the Command register), our simulation confirmed that the Hart entered stepping mode, with the first instruction executing correctly. This was accomplished without a physical connection to the processor, relying solely on our logical implementation.
+2. **Breakpoint**:Setting a breakpoint involves two steps:
+      - Storing PC=32'h00000024 in the `dscratch0` register using `data0` and the access register command (32'h000307b2).
+      - Writing 32'h00008000 (set `ebreakm`) into the `dcsr` register using `data0` and the access register command (32'h000307b0), ensuring proper breakpoint handling.
 
-3. **Resuming with Stepping**: When `resumereq` was activated, stepping occurred (since the step bit remained set), allowing continuous resume commands to enable the Hart to step through each instruction one by one successfully.
 
-4. **Exiting Stepping Mode**: After clearing the step bit in the `dcsr` register, we verified that the Hart exited stepping mode.
+3. **Stepping Sequence**: The Hart executed three consecutive steps by storing 32'h00000004 in the dcsr register via data0 and the access register command (32'h000307b0) for each step, successfully progressing through instructions one at a time.
 
-5. **Resuming the Processor**: After setting `resumereq` in `dmcontrol`, the Hart resumed normal execution and exited Debug Mode. Our simulation confirmed that the processor continued executing instructions without issues.
+4. **Exiting Debugging Mode**: The `resumereq` command (32'h40000001) resumed normal processor execution, and the Hart exited Debug Mode without issues.
+
 
 Overall, the simulation is functioning as intended, aligning perfectly with the described flow.
 
