@@ -11,7 +11,7 @@ You can view the complete specification [here](https://riscv.org/wp-content/uplo
 3. [Block Diagram](#3-block-diagram)
 4. [State Machines](#4-state-machines)
    - [Debug Module State Machine](#41-debug-module-state-machine)
-   - [Hart State Machine](#42-hart-state-machine)
+   - [Debug Support State Machine](#42-debug-support-state-machine)
 5. [Simulation Results](#5-simulation-results)
 6. [Challenges Faced](#6-challenges-faced)
 7. [Team](#7-team)
@@ -47,7 +47,7 @@ The block diagram shows the interaction between the **Debug Module (DM)**, the *
 
   The main states are:
 
-  - **Non-Debug States**: DM is waiting for a halt request.
+  - **Non-Debug States**: DM is waiting for a halt command.
   - **Halt/Resume**: These states are used for halting and resuming processor execution. They are also triggered when a set breakpoint is detected, and step operations occur in these states as well.
   - **Access Register Abstract Command**: These states are used to access registers with abstract commands. For example:
     - The **dcsr register** is accessed for Stepping and handling Break_Point.
@@ -55,11 +55,11 @@ The block diagram shows the interaction between the **Debug Module (DM)**, the *
     - The **dpc register** is accessed to monitor the current value of the PC during Debug Operations.
   ![DM State Machine](https://github.com/kingsflicker/MASF-RV-External-Debugger/blob/main/Project_Diagrams/DM_FSM.png)
 
-- ### 4.2 Hart State Machine
+- ### 4.2 Debug Support State Machine
 
   The main states are:
 
-  - **Non-Debug States**: HarT is waiting for a halt request.
+  - **Non-Debug States**: Debug Support Module is waiting for a halt request.
   - **Halt/Resume**: These states are using for Halting to enter in Debug Mode, and Resuming.
   - **Step**: These states are responsible for single step execution in Debug Mode.
   - **Ebreak**: These states are responsible for Break_Point.
@@ -102,7 +102,7 @@ Once these issues are resolved, it will improve the DM functionality and allow u
 
 - **Team Members:**
   - **Umm-e-Ammara**  
-    Contact: abc@example.com
+    Contact: queensflicker@gmail.com
   - **Sufyan Ahmad Basra**  
     Contact: abc@example.com
   - **M. Faiq**  
