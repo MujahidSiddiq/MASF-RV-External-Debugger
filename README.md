@@ -106,4 +106,4 @@ Once these issues are resolved, it will improve the DM functionality and allow u
   - **Sufyan Ahmad Basra**  
     Contact: abc@example.com
   - **M. Faiq**  
-    Contact: abc@example.com
+    Contact: muhammadfaiq850@gmail.com
