@@ -100,7 +100,7 @@ typedef struct packed {
 
 
 
-
+/*
 typedef struct packed {
     logic [7:0]     cmdtype;            // Bits 31:24: cmdtype
     logic           reser;
@@ -112,18 +112,50 @@ typedef struct packed {
     logic [15:0]    regno;              // Bits 15:0: regno
     
 } type_dm_reg_command_e;
+*/
 
+
+typedef struct packed {
+    logic [7:0] cmdtype;    // Bits 31:24: cmdtype
+    union packed {
+        // Fields for cmdtype = 0 (Access Register Command)
+        struct packed {
+            logic        always_zero_23;
+            logic [2:0]  aarsize;            // Bits 22:20: aarsize
+            logic        aarpostincrement;   // Bit 19: aarpostincrement
+            logic        postexec;           // Bit 18: postexec
+            logic        transfer;           // Bit 17: transfer
+            logic        write;              // Bit 16: write
+            logic [15:0] regno;              // Bits 15:0: regno
+        } access_reg;
+
+        // Fields for cmdtype = 2 (Access Memory Command)
+        struct packed {
+            logic        aamvirtual;         // Bit 23: aamvirtual
+            logic [2:0]  aamsize;            // Bits 22:20: aamsize
+            logic        aampostincrement;   // Bit 19: aampostincrement
+            logic [1:0]  always_zeros_17_to_18;
+            logic        write;              // Bit 16: write (shared with Access Register Command)
+            logic [1:0]  target_specific;    // Bits 15:14: target-specific fields
+            logic [13:0] always_zeros_0_to_13;
+        } access_mem;
+
+        // Quick Access Command (cmdtype = 1) would have no specific fields; all bits are zero
+      //  logic [23:0] quick_access;           // Bits 23:0: zeroed-out fields
+    } control;
+} type_dm_reg_command_e;
 
 // State encoding
-typedef enum logic [2:0] {
-    NORMAL_EXECUTION = 3'b000,          // Normal Execution state (running)
-    HALTING          = 3'b001,          // Halting state (running/halted)
-    HALTED           = 3'b010,          // Halted state (halted)
-    RESUMING         = 3'b011,          // Resuming state (running/halted)
-    COMMAND_START    = 3'B100,
-    COMMAND_TRANSFER = 3'B101,
-    COMMAND_DONE     = 3'B110,
-    HART_RESET       = 3'b111           // Hart Reset state
+typedef enum logic [3:0] {
+    NORMAL_EXECUTION = 4'b0000,          // Normal Execution state (running)
+    HALTING          = 4'b0001,          // Halting state (running/halted)
+    HALTED           = 4'b0010,          // Halted state (halted)
+    RESUMING         = 4'b0011,          // Resuming state (running/halted)
+    COMMAND_START    = 4'B0100,
+    COMMAND_TRANSFER = 4'B0101,
+    COMMAND_DONE     = 4'B0110,
+    ACCESS_MEM       = 4'b0111,
+    READING_MEM      = 4'B1000           
 
 } type_states_hart_e;
 

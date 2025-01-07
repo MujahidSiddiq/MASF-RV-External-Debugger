@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 10/12/2024 04:58:59 PM
+// Create Date: 12/25/2024 03:04:07 PM
 // Design Name: 
-// Module Name: top_module
+// Module Name: Top_Module
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -21,46 +21,46 @@
 
 
 module Top_Module(
+                        input logic clk_i,
+                        input logic reset_i,
+                        // DMI Req to DM signals
+                        input  logic [1:0]          dmi_req_op_i,
+                        input  logic [31:0]         dmi_req_data_i,
+                        input  logic [6:0]          dmi_req_address_i,
+                        input  logic                dmi_req_valid_i,
+                    
+                        // DM response to DMI signals
+                        output logic                dmi_req_ready_o, 
+                        output logic                dmi_rsp_valid_o,
+                        output logic [31:0]         dmi_rsp_data_o,
+                        output logic [1:0]          dmi_rsp_op_o
 
-        input   logic           clk, 
-        input   logic           reset,
-        
-        
-        // dmi
-        input   logic            dmi_req_valid_i,
-        input   logic [1:0]      dmi_req_op_i,
-        input   logic [6:0]      dmi_req_address_i,
-        input   logic [31:0]     dmi_req_data_i,
-        
-        output  logic            dmi_req_ready_o, 
-        output  logic            dmi_rsp_valid_o,
-        output  logic [1:0]      dmi_rsp_op_o,
-        output  logic [31:0]     dmi_rsp_data_o
-        
-      
     );
     
-                logic             ht_halt_ack;
-                logic             ht_resume_ack;
-                logic             ht_halt_req;
-                logic             ht_rd_wr_en;
-                logic             ht_rd_wr;
-                logic [15:0]      ht_rd_wr_address;
-                wire  [31:0]      ht_rd_wr_data;
-                logic             ht_ebreak;
-                logic             ht_step_exec;
-
-                //pipeline
-                logic             pipeline_inst_comp;
-                logic [31:0]      pipeline_pc;
-                logic             pipeline_halt_active;
-                logic             pipeline_reset_stages;
-
-
+                        logic             halt_ack;
+                        logic             resume_ack;
+                        logic             halt_req;
+                        logic             rd_wr_en;
+                        logic             rd_wr;
+                        logic [15:0]      rd_wr_address;
+                        wire  [31:0]      rd_wr_data;
+                        logic             ebreak;
+                        logic             step_exec;
+                        logic [31:0]      PC;
+                        logic [31:0]      instruction;
+                        
+                        logic             Mem_read;;     
+                        logic             Mem_write;    
+                        logic [31:0]      Mem_addr;     
+                        logic [31:0]      Mem_write_data;  
+                        logic [31:0]      Mem_out;
+                        logic Mem_rd_en;
+                        logic [31:0] Mem_rd_address;
+                             
     
     DM Debug_Module                                     (
-                                                        .clk_i                          (clk),
-                                                        .reset_i                        (reset),
+                                                        .clk_i                          (clk_i),
+                                                        .reset_i                        (reset_i),
                                                         .dmi_req_op_i                   (dmi_req_op_i),
                                                         .dmi_req_data_i                 (dmi_req_data_i),
                                                         .dmi_req_address_i              (dmi_req_address_i),
@@ -69,47 +69,70 @@ module Top_Module(
                                                         .dmi_rsp_valid_o                (dmi_rsp_valid_o),
                                                         .dmi_rsp_data_o                 (dmi_rsp_data_o),
                                                         .dmi_rsp_op_o                   (dmi_rsp_op_o),
-                                                        .ht_halt_ack_i                  (ht_halt_ack),
-                                                        .ht_halt_req_o                  (ht_halt_req),
-                                                        .ht_rd_wr_en_o                  (ht_rd_wr_en),
-                                                        .ht_rd_wr_o                     (ht_rd_wr),
-                                                        .ht_rd_wr_address_o             (ht_rd_wr_address),
-                                                        .ht_rd_wr_data_io               (ht_rd_wr_data),
-                                                        .ht_resume_ack_i                (ht_resume_ack),
-                                                        .ht_ebreak_i                    (ht_ebreak),
-                                                        .ht_step_exec_i                 (ht_step_exec)
+                                                        .core_halt_ack_i                (halt_ack),
+                                                        .core_halt_req_o                (halt_req),
+                                                        .core_rd_wr_en_o                (rd_wr_en),
+                                                        .core_rd_wr_o                   (rd_wr),
+                                                        .core_rd_wr_address_o           (rd_wr_address),
+                                                        .core_rd_wr_data_io             (rd_wr_data),
+                                                        .core_resume_ack_i              (resume_ack),
+                                                        .core_ebreak_i                  (ebreak),
+                                                        .core_step_exec_i               (step_exec),
+                                                        .Mem_rd_en_o                    (Mem_rd_en),
+                                                        .Mem_rd_address_o               (Mem_rd_address)
+                                                        
+                                                        );
+                                                        
+                                                        
+                                                        
+                                                        
+
+    Core Risc_V_Core                                     (
+                                                        .clk_i                          (clk_i),
+                                                        .reset_i                        (reset_i),
+                                                        .dm_halt_ack_o                  (halt_ack),
+                                                        .dm_halt_req_i                  (halt_req),
+                                                        .dm_reg_rd_wr_en_i                  (rd_wr_en),
+                                                        .dm_reg_rd_wr_i                     (rd_wr),
+                                                        .dm_reg_rd_wr_address_i             (rd_wr_address),
+                                                        .dm_reg_rd_wr_data_io               (rd_wr_data),
+                                                        .dm_resume_ack_o                (resume_ack),
+                                                        .dm_ebreak_o                    (ebreak),
+                                                        .dm_step_exec_o                 (step_exec),
+                                                        .Mem_read                       (Mem_read),     
+                                                        .Mem_write                      (Mem_write),
+                                                        .Mem_addr                       (Mem_addr),
+                                                        .Mem_write_data                 (Mem_write_data),
+                                                        .Mem_out                        (Mem_out),
+                                                        .PC                             (PC),
+                                                        .instruction                    (instruction)
                                                         );
                         
                         
-                        
-    HART Hardware_Thread                                (
-                                                        .clk_i                          (clk),
-                                                        .reset_i                        (reset),
-                                                        .dm_halt_ack_o                  (ht_halt_ack),
-                                                        .dm_resume_ack_o                (ht_resume_ack),
-                                                        .dm_halt_req_i                  (ht_halt_req),                
-                                                        .dm_rd_wr_en_i                  (ht_rd_wr_en),
-                                                        .dm_rd_wr_i                     (ht_rd_wr),
-                                                        .dm_rd_wr_address_i             (ht_rd_wr_address),
-                                                        .dm_rd_wr_data_io               (ht_rd_wr_data),
-                                                        .dm_ebreak_o                    (ht_ebreak),
-                                                        .dm_step_exec_o                 (ht_step_exec),
-                                                        .pipeline_inst_comp_i           (pipeline_inst_comp),
-                                                        .pipeline_pc_i                  (pipeline_pc),
-                                                        .pipeline_halt_active_o         (pipeline_halt_active),
-                                                        .pipeline_reset_stages_o        (pipeline_reset_stages)                  
+       // Instruction Memory instantiation
+    Instruction_Memory Instruction_Memory               (  
+                                                        .pc                             (PC),
+                                                        .instruction                    (instruction)                
+                                                        // Add connections for Instruction_Memory ports here
                                                         );
 
-
-
-    Pipeline Pipeline_3_stages                          (
-                                                        .clk                            (clk),
-                                                        .reset                          (reset),
-                                                        .ht_inst_comp_o                 (pipeline_inst_comp),
-                                                        .ht_pc_o                        (pipeline_pc),
-                                                        .ht_halt_active_i               (pipeline_halt_active),
-                                                        .ht_reset_stages_i              (pipeline_reset_stages)
-                                                        // .ht_ebreak_i                    (ht_ebreak)
-                                                        );                    
-                    
+    // Data Memory instantiation
+    Data_Memory Data_Memory                             (
+                                                        .clk_i                          (clk_i),
+                                                        .Mem_read                       (Mem_read),
+                                                        .Mem_write                      (Mem_write),
+                                                        .Mem_addr                       (Mem_addr),
+                                                        .Mem_write_data                 (Mem_write_data),
+                                                        .Mem_out                        (Mem_out),
+                                                        
+                                                        // DM
+                                                        .dm_Mem_rd_en_i                 (Mem_rd_en),
+                                                        .dm_Mem_rd_address_i            (Mem_rd_address),
+                                                        .dm_Mem_rd_wr_data_io           (rd_wr_data)
+                                                        // Add connections for Data_Memory ports here
+                                                        ); 
+    
+    
+    
+    
 endmodule

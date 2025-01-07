@@ -52,16 +52,3 @@ typedef struct packed {
 } type_dmode_reg_dcsr_e;
 
 
-// State encoding
-typedef enum logic [2:0] {
-    NORMAL_EXEC         = 3'b000, 
-    WAITING_FOR_ACK     = 3'b001,
-    DEBUG_MODE          = 3'b010, 
-    HART_RESUMING       = 3'b011,
-    STEP_EXEC           = 3'b100, 
-    WAITING_FOR_I_COMP  = 3'b101, 
-    EBREAK              = 3'b110,
-    RESUME_FOR_EBREAK   = 3'b111
-} type_states_dmode_e;
-
-
