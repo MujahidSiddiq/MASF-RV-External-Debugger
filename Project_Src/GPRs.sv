@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 03/23/2024 02:01:22 PM
+// Create Date: 12/26/2024 08:28:51 AM
 // Design Name: 
-// Module Name: Reg_File
+// Module Name: GPRs
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,11 +20,20 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Reg_File(
+module GPRs(
     input logic [31:0] data_rd,
     input logic [4:0] addr_rs1, addr_rs2, addr_rd,
-    input logic reg_WEn, clk,
-    output logic [31:0] data_rs1, data_rs2 //, current_rd_data
+    input logic reg_WEn, clk_i,
+    output logic [31:0] data_rs1, data_rs2, //, current_rd_data
+    
+    
+    // DM
+    input logic dm_reg_rd_wr_en_i,
+    input logic dm_reg_rd_wr_i,
+    input logic [15:0] dm_reg_rd_wr_address_i,
+    inout logic [31:0] dm_reg_rd_wr_data_io,
+    
+    input logic DSP_reg_access_i
 );
     // Register file memory
     logic [31:0] reg_memory[0:31]; // No initialization needed
@@ -58,11 +67,12 @@ module Reg_File(
     // assign current_rd_data = reg_memory[prevrd];
 
     // Write operation (positive edge-triggered)
-    always @(posedge clk) begin
+    always @(posedge clk_i) begin
         if ( (reg_WEn) && (addr_rd != 5'b00000) ) begin
             reg_memory[addr_rd] <= data_rd;
             // prevrd <= addr_rd;
         end
     end
-endmodule
+    assign dm_reg_rd_wr_data_io =  ( (dm_reg_rd_wr_en_i) & (!dm_reg_rd_wr_i)  & (dm_reg_rd_wr_address_i[15:8] == 8'h10 ) & (dm_reg_rd_wr_address_i[7:5] == 0 ) & (DSP_reg_access_i) )  ? reg_memory[dm_reg_rd_wr_address_i[4:0]] : 32'bz;
 
+endmodule

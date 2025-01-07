@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 03/23/2024 11:41:52 AM
+// Create Date: 12/25/2024 03:44:07 PM
 // Design Name: 
-// Module Name: PLP_3_Stages
+// Module Name: Pipeline
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,20 +20,46 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module Pipeline( input logic clk,reset,
-                 output logic ht_inst_comp_o,
-                 output logic [31:0] ht_pc_o,
-                 input logic ht_halt_active_i,
-                 input logic ht_reset_stages_i
-                //  input logic ht_ebreak_i
-                    // output logic [31:0] current_rd_data,
-                    // output logic [31:0] current_mem_data
+module Pipeline(
+            input  logic                clk_i,
+            input  logic                reset_i,
+            
+            
+            // Instruction Memory
+            output  logic [31:0]         inst_mem_PC_o,
+            input   logic [31:0]         inst_mem_M_inst_i,
+            
+            // GPRs
+            input   logic [31:0]         gprs_data_rs1_i,
+            input   logic [31:0]         gprs_data_rs2_i,
+            output  logic [31:0]         gprs_data_rd_o,
+            output  logic [4:0]          gprs_addr_rd_o,
+            output  logic [4:0]          gprs_addr_rs1_o,
+            output  logic [4:0]          gprs_addr_rs2_o,
+            output  logic                gprs_reg_WEn_o,
+            
+            
+            // CSRs
+                 
+            // Debug Support
+            input   logic                DSP_halt_active_i,
+            input   logic                DSP_reset_stages_i,
+            output  logic                DSP_inst_comp_o,
+  
+            // Data Memory 
+            input   logic [31:0]         Mem_rd_data_i,           // Mem_out
+            output  logic                Mem_read_o,              // Mem_read
+            output  logic                Mem_write_o,             // Mem_write
+            output  logic [31:0]         Mem_address_o,           // Mem_address
+            output  logic [31:0]         Mem_write_data_o         // write_data
+   
 
     );
-    localparam logic [31:0] EBREAK = 32'h00000013;
+    
+        localparam logic [31:0] EBREAK = 32'h00000013;
     logic [31:0] pc_plus_4, ALU_result, ALU_result_3, pc_new, pc, instruction, IR, pc_2, pc_3, immediate, data_rd, data_rs1, data_rs2,  data_A, data_B, W_Data, IR_3, mem_out, pc_3_plus4;
     logic br_taken, reg_wrMW, sel_A, sel_B, Mem_read, Mem_write, Mem_R, Mem_W, reg_WEn;
-    logic [4:0] addr_rs1,addr_rs2,addr_rd;
+    //logic [4:0] addr_rs1,addr_rs2,addr_rd;
     logic [2:0] br_type;
     logic [3:0] ALU_op;
     logic [1:0] WB_sel_MW;  
@@ -43,8 +69,9 @@ module Pipeline( input logic clk,reset,
     // for debgger //
     ////////////////
 
-    logic [31:0] M_inst;
-    assign instruction = ht_halt_active_i ? EBREAK : M_inst;
+    assign inst_mem_PC_o = pc;
+    //logic [31:0] M_inst;
+    assign instruction = DSP_halt_active_i ? EBREAK : inst_mem_M_inst_i;
     
     logic stage_2, stage_3;
     assign stage_2 = ( ALU_op == 4'b1111);
@@ -57,7 +84,7 @@ module Pipeline( input logic clk,reset,
     assign stage_3 = WB_mux_11_true & no_mem_access;
 
     
-    assign ht_inst_comp_o = stage_2 & stage_3;
+    assign DSP_inst_comp_o = stage_2 & stage_3;
 
     
     
@@ -66,21 +93,38 @@ module Pipeline( input logic clk,reset,
                                     
     logic [1:0] WB_sel;
     
-    assign addr_rs1 = IR[19:15];
-    assign addr_rs2 = IR[24:20];
-    assign addr_rd = IR_3[11:7];
+    assign gprs_addr_rs1_o = IR[19:15];
+    assign gprs_addr_rs2_o = IR[24:20];
+    assign gprs_addr_rd_o = IR_3[11:7];
+
+    assign gprs_reg_WEn_o = reg_wrMW; 
+    assign gprs_data_rd_o = data_rd;
+    assign d_rs1 = gprs_data_rs1_i;
+    assign d_rs2 = gprs_data_rs2_i;
+
+    // Data Memory
+    assign Mem_read_o = Mem_read;       
+    assign Mem_write_o = Mem_write;     
+    assign Mem_address_o = ALU_result_3;
+
+    assign Mem_write_data_o = W_Data; 
+    assign mem_out = Mem_rd_data_i;
+
+
+    
+        
     ////////////////////////
     // related to debugger//
     ///////////////////////
-    assign ht_pc_o = pc;
+    assign inst_mem_PC_o = pc;
     
     ProgramCounter Program_Counter( .pc_new(pc_new),
-                                    .clk(clk), 
-                                    .reset(reset), 
+                                    .clk(clk_i), 
+                                    .reset(reset_i), 
                                     .pc(pc),
                                     .Stall(Stall),
-                                    .halt_active(ht_halt_active_i),
-                                    .reset_stages(ht_reset_stages_i)
+                                    .halt_active(DSP_halt_active_i),
+                                    .reset_stages(DSP_reset_stages_i)
                                     );
                                     
     Plus_4 Plus4_for_P_counter(     .in(pc),
@@ -93,55 +137,41 @@ module Pipeline( input logic clk,reset,
                                     .out(pc_new)
                                     );
                                     
-    Instruction_Memory Inst_Memory( .pc(pc),
-                                    .instruction(M_inst)
-                                    );   
     
-    IR_2nd_stage IR_2nd_Stage(       .clk(clk),
-                                     .in(instruction),
-                                     .out(IR),
-                                     .Flush(Flush),
-                                     .Stall(Stall),
-                                     .reset_stages(ht_reset_stages_i)
-                                     );      
-                                     
- /*   uncond_str_element IR_3rd_Stage( .clk(clk),
+    
+    // Instruction Memory
+    
+    IR_2nd_stage IR_2nd_Stage(   .clk(clk_i),
+                                 .in(instruction),
+                                 .out(IR),
+                                 .Flush(Flush),
+                                 .Stall(Stall),
+                                 .reset_stages(DSP_reset_stages_i)
+                                 ); 
+    
+       IR_3rd_stage IR_3rd_stage(       .clk(clk_i),
                                      .in(IR),
                                      .out(IR_3),
-                                     .Stall(Stall_MW)
-                                     );   */
-
-    IR_3rd_stage IR_3rd_stage(       .clk(clk),
-                                     .in(IR),
-                                     .out(IR_3),
-                                     .reset_stages(ht_reset_stages_i)
+                                     .reset_stages(DSP_reset_stages_i)
                                      
                                      );
    
-   uncond_str_element PC_2nd_Stage(  .clk(clk),
+   uncond_str_element PC_2nd_Stage(  .clk(clk_i),
                                      .in(pc),
                                      .out(pc_2),
                                      .Stall(Stall),
-                                     .reset_stages(ht_reset_stages_i)
+                                     .reset_stages(DSP_reset_stages_i)
                                      );  
    
    imm_generator Imm_Generator(      .instruction(IR),
                                      .immediate(immediate)
-                                     );  
-                                     
+                                     );   
+    
+    
+   //  Register File GPRs
    
-   Reg_File Register_File(           .addr_rs1(addr_rs1),
-                                     .addr_rs2(addr_rs2),
-                                     .addr_rd(addr_rd),
-                                     .reg_WEn(reg_wrMW),
-                                     .clk(clk),
-                                     .data_rd(data_rd),
-                                     .data_rs1(d_rs1),
-                                     .data_rs2(d_rs2)
-                                   //  .current_rd_data(current_rd_data)
-                                     );    
-                                     
-    mux_2x1 MUX_Data_A(              .select(sel_A),
+   
+       mux_2x1 MUX_Data_A(              .select(sel_A),
                                      .data0(data_rs1),
                                      .data1(pc_2),
                                      .out(data_A)
@@ -165,37 +195,30 @@ module Pipeline( input logic clk,reset,
                                      .ALU_result(ALU_result)
                                      ); 
                                      
-    uncond_str_element PC_3rd_Stage(  .clk(clk),
+    uncond_str_element PC_3rd_Stage(  .clk(clk_i),
                                      .in(pc_2),
                                      .out(pc_3),
                                      .Stall(Stall),
-                                     .reset_stages(ht_reset_stages_i)
+                                     .reset_stages(DSP_reset_stages_i)
                                      );    
                                      
-    uncond_str_element ALU_3rd_Stage(  .clk(clk),
+    uncond_str_element ALU_3rd_Stage(  .clk(clk_i),
                                      .in(ALU_result),
                                      .out(ALU_result_3),
                                      .Stall(Stall),
-                                     .reset_stages(ht_reset_stages_i)
+                                     .reset_stages(DSP_reset_stages_i)
                                      );                                                                    
                                          
-    uncond_str_element WD_3rd_Stage(  .clk(clk),
+    uncond_str_element WD_3rd_Stage(  .clk(clk_i),
                                      .in(data_rs2),
                                      .out(W_Data),
                                      .Stall(Stall),
-                                     .reset_stages(ht_reset_stages_i)
+                                     .reset_stages(DSP_reset_stages_i)
                                      );   
                                      
-                                     
-    Data_Memory Data_Memory(         .clk(clk),
-                                     .Mem_read(Mem_read),
-                                     .Mem_write(Mem_write),
-                                     .mem_addr(ALU_result_3),
-                                     .write_data(W_Data),
-                                     .mem_out(mem_out)
-                                  //   .current_mem_data(current_mem_data)
-                                     );    
-                                     
+    // Data Memory
+    
+                                         
     mux_3x1 WB_Mux(                  .select(WB_sel_MW),
                                      .data0(mem_out),
                                      .data1(ALU_result_3),
@@ -227,9 +250,9 @@ module Pipeline( input logic clk,reset,
                                     .Mem_R(Mem_R),
                                     .Mem_W(Mem_W),
                                     .WB_sel(WB_sel),
-                                    .clk(clk),
+                                    .clk(clk_i),
                                     .Stall(Stall),
-                                    .reset_stages(ht_reset_stages_i)
+                                    .reset_stages(DSP_reset_stages_i)
                                     );  
     FSU Forward_Stall_Unit(         .IR(IR),
                                     .IR_3(IR_3),
@@ -253,5 +276,7 @@ module Pipeline( input logic clk,reset,
                                      .data1(ALU_result_3),
                                      .out(data_rs2)
                                      );                                                                    
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+         
+    
+    
 endmodule
