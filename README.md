@@ -25,7 +25,7 @@ Currently, the following debugging features have been successfully integrated in
 - **Resume**: Restarts the processor from the current instruction, regardless of where it is halted.
 - **Step**: Executes one instruction at a time to allow detailed inspection of the execution flow.
 - **Breakpoints**: Allows dynamic insertion of breakpoints during execution, enabling the processor to halt when a specific condition or address is met.
-- **Access Registers**: Provides read access for CSR and GPR registers, and write access for Debug CSR registers only.
+- **Access Registers**: Provides Read Access for CSR and GPR registers, and write access for Debug CSR registers only.
 - **Access Data Memory**: Allows reading data from data memory during execution.
 
 ## 3. Block Diagram
