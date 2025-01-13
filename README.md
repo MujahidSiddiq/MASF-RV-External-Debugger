@@ -44,7 +44,7 @@ The block diagram shows the interaction between the **Debug Module (DM)**, the *
 
 - **Team Members:**
   - **Umm-e-Ammara**  
-    Contact: queensflicker@gmail.com
+    Contact: ummeammaraofficial@gmail.com
   - **Sufyan Ahmad Basra**  
     Contact: sufyanahmadbasra@gmail.com
   - **M. Faiq**  
