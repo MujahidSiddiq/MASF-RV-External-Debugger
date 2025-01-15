@@ -21,9 +21,13 @@
 
 
 module FSU( input logic [31:0] IR,IR_3,
-           // input logic [1:0] WB_sel,
+            input logic [31:0] IR_3,
             input logic reg_wrMW,  br_taken,
-            output logic  For_A, For_B , Stall,  Flush //, Stall_MW
+            input logic br_taken,
+            output logic  For_A, 
+            output logic  For_B ,  
+            output logic  Stall,   
+            output logic  Flush 
 
     );
     //logic [4:0] rd_IR, rs1_IR_3, rs2_IR_3;
