@@ -1,0 +1,3 @@
+[submodule "path/to/private-folder"]
+	path = path/to/private-folder
+	url = https://github.com/kingsflicker/MASF-Private-Files.git
