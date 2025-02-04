@@ -40,7 +40,7 @@ The block diagram shows the interaction between the **Debug Module (DM)**, the *
 ## 4. Team
 
 - **Project Leader: M. Mujahid Siddiq**  
-  Contact: kingsflicker@gmail.com
+  Contact: muhammadmujahidsiddiq@gmail.com
 
 - **Team Members:**
   - **Umm-e-Ammara**  
