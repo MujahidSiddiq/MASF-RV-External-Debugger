@@ -21,35 +21,52 @@
 
 
 module uncond_str_element(
-    input logic clk, Stall,
-    input logic [31:0] in,
-    output logic [31:0] out,
-    input logic reset_stages
-);
+     
+     //Global control
+    input  logic                          clk,
+    input  logic                          reset_stages,
 
-// Registers to hold the output value
-logic [31:0] out_reg;
-// initial begin
-//     out_reg = 0;
+    input  logic                          Stall,
+    input  logic [31:0]                   in,
+    output logic [31:0]                   out
+    
+    );
 
-// end
 
-// Always block to update the output register
-always_ff @(posedge clk) begin
-    if(reset_stages) begin 
-        out_reg <= 0;
+    //////////////////////////////////////////////////
+    // **** Registers to hold the output value **** //
+    //////////////////////////////////////////////////
+
+            logic [31:0]                  out_reg;
+
+
+    //////////////////////////////////////////////////////////
+    // **** Always block to update the output register **** //
+    //////////////////////////////////////////////////////////
+
+    always_ff @(posedge clk) begin
+
+        if(reset_stages) begin 
+            out_reg     <=       0;
+        end
+
+        else if (!Stall) begin
+            out_reg     <=       in;
+        end 
+        
+        else begin
+            out_reg     <=       out_reg;
+        end
+
     end
-    else if (!Stall) begin
-        // Update output if not stalled
-        out_reg <= in;
-    end else begin
-        // Retain the previous value of the output when stalled
-        out_reg <= out_reg;
-    end
-end
 
-// Assign output to the registered value
-assign out = out_reg;
+
+    /////////////////////////////////////////////////////
+    // **** Assign output to the registered value **** //
+    /////////////////////////////////////////////////////
+
+        assign out      =        out_reg;
+
 
 endmodule
 

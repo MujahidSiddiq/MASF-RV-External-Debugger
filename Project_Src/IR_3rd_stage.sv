@@ -21,32 +21,47 @@
 
 
 module IR_3rd_stage(
-    input logic clk, 
-    input logic [31:0] in,
-    output logic [31:0] out,
-    input logic reset_stages
+
+     //Global control
+    input  logic                     clk, 
+    input  logic                     reset_stages,
+
+    input  logic [31:0]              in,
+    output logic [31:0]              out
+    
 );
 
-// Registers to hold the output value
-logic [31:0] out_reg;
-initial begin
-    out_reg = 32'h00000013;
-end
-always @(posedge clk) begin
 
-    if(reset_stages) begin
-        out_reg <= 32'h00000013;
+    //////////////////////////////////////////////////
+    // **** Registers to hold the output value **** //
+    //////////////////////////////////////////////////
+
+        logic [31:0]           out_reg;
+
+    initial begin
+        out_reg       =        32'h00000013;
     end
+
+    always @(posedge clk) begin
+
+        if(reset_stages) begin
+            out_reg   <=       32'h00000013;
+        end
+        
+        else begin
+            out_reg   <=       in;
+
+        end
     
-    else begin
-        out_reg <= in;
-
     end
-   
-end
 
-// Assign output to the registered value
-assign out = out_reg;
+
+    ///////////////////////////////////////////////////
+    // **** Assign output to the registered value ** //
+    ///////////////////////////////////////////////////
+
+        assign out    =        out_reg;
+
 
 endmodule
 

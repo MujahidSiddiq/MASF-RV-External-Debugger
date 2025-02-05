@@ -21,10 +21,16 @@
 
 
 module mux_2x1(
-    input logic select,
-    input logic [31:0] data0,data1,
-    output logic [31:0] out
+
+    input  logic              select,
+    input  logic [31:0]       data0,
+    input  logic [31:0]       data1,
+    output logic [31:0]       out
+    
+    
     );
     
     assign out = select ? data1 :  data0;
+
+    
 endmodule

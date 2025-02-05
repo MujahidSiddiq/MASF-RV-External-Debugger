@@ -20,68 +20,68 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module ProgramCounter (
-    input logic [31:0] pc_new,
-    input logic clk, Stall, reset,
-    output logic [31:0] pc,
-    input logic halt_active,
-    input logic reset_stages
+     // Global control
+    input  logic             clk,
+    input  logic             reset,
+
+     // Counter
+    input  logic [31:0]      pc_new,
+
+     // Control signals
+    input  logic             Stall,
+    input  logic             halt_active,
+    input  logic             reset_stages,
+
+     // Instruction memory
+    output logic [31:0]      pc
+
+
 );
 
-    // Define program counter register
+
+    //////////////////////////////////////////////
+    // **** Define program counter register ****//
+    //////////////////////////////////////////////
+
+
     logic [31:0] pc_reg;
     initial begin
         pc_reg = 32'h00000008;
     end
-    // Always block to update the program counter register
+
+     
+    ///////////////////////////////////////////////////////////////////
+    // **** Always block to update the program counter register **** //
+    //////////////////////////////////////////////////////////////////
+
+
     always @(posedge clk or negedge reset) begin
+
+
         if ((!reset | (reset_stages))) begin
-            // Reset program counter
-            pc_reg <= 32'h00000008;
-        end else if (!halt_active) begin
-                if(!Stall) begin
-                    // Update program counter if not stalled
-                    pc_reg <= pc_new;
-                end
-            
-        end else begin
-            // If stalled, retain the previous value of the program counter
-            pc_reg <= pc_reg;
-        end
-    end
+            pc_reg <= 32'h00000008; // Reset program counter
+        end 
 
-    // Assign the program counter value to output
-    assign pc = pc_reg;
-
-endmodule
-
-
-/*
-module ProgramCounter (
-    input logic [31:0] pc_new,
-    input logic clk,Stall,
-    input logic reset,
-    output logic [31:0] pc
-);  
-  
-
-    // Define program counter register
-    logic [31:0] pc_reg;
-
-   
-    always_ff @(posedge clk, posedge reset)
-    begin
-        if (reset)
-            pc_reg <= 32'b0; // Reset program counter
-        else begin
+        else if (!halt_active) begin
+            if(!Stall) begin
+                 pc_reg <= pc_new; // Update program counter if not stalled
+            end
+        end 
         
-            pc_reg <= pc_new;
-   
+        else begin
+            pc_reg <= pc_reg; // If stalled, retain the previous value of the program counter
         end
-    end
 
-    // Output the program counter value
+
+        end
+
+
+    /////////////////////////////////////////////////////////
+    // **** Assign the program counter value to output ****//
+    /////////////////////////////////////////////////////////
+
+
     assign pc = pc_reg;
 
 
 endmodule
-*/
