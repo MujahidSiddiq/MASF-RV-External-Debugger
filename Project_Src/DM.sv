@@ -32,12 +32,16 @@ module DM (
     input  logic [31:0]         dmi_req_data_i,
     input  logic [6:0]          dmi_req_address_i,
     input  logic                dmi_req_valid_i,
+    input logic                 dmi_resp_ready_i,  // new
+    input logic                 dmi_hardreset_i, // new
+   
 
     // DM response to DMI signals
     output logic                dmi_req_ready_o, 
-    output logic                dmi_rsp_valid_o,
-    output logic [31:0]         dmi_rsp_data_o,
-    output logic [1:0]          dmi_rsp_op_o,
+    output logic                dmi_resp_valid_o,
+    output logic [31:0]         dmi_resp_data_o,
+  //  output logic [1:0]          dmi_rsp_op_o,
+    output logic                dmi_resp_error_o,   // new  
 
     // Hardware-Thread
     input  logic                core_halt_ack_i, 
@@ -107,6 +111,9 @@ module DM (
     logic [31:0]        Mem_rd_data0_mux_out;
     logic [31:0]        dmi_data1_mux_out;
     logic               dmi_data1_mux_sel;
+    logic               temp;
+    
+    assign temp =  dmi_resp_ready_i | dmi_hardreset_i | dmi_resp_error_o; // new
 
 
 
@@ -426,9 +433,8 @@ module DM (
     // ************** Outputs *************** //
     ///////////////////////////////////////////
 
-    assign dmi_rsp_op_o                     =       dmi_req_op_i;
-    assign dmi_rsp_data_o                   =       rsp_data0_mux_out;
-    assign dmi_rsp_valid_o                  =       rsp_dmstatus_mux_sel;
+    assign dmi_resp_data_o                   =       rsp_data0_mux_out;
+    assign dmi_resp_valid_o                  =      rsp_dmstatus_mux_sel;
     assign dmi_req_ready_o                  =       !rsp_dmstatus_mux_sel;
     assign core_rd_wr_o                       =       command.control.access_reg.write;
     assign core_rd_wr_address_o               =       command.control.access_reg.regno[15:0];
