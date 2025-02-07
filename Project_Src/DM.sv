@@ -32,7 +32,7 @@ module DM (
     input  logic [31:0]         dmi_req_data_i,
     input  logic [6:0]          dmi_req_address_i,
     input  logic                dmi_req_valid_i,
-    input logic                 dmi_resp_ready_i,  // new
+    input logic                 dmi_resp_ready_i,  // new no need to use again check it
     input logic                 dmi_hardreset_i, // new
    
 
@@ -57,8 +57,8 @@ module DM (
     
     
     // Data Memory
-    output logic Mem_rd_en_o,
-    output logic [31:0] Mem_rd_address_o
+    output logic                Mem_rd_en_o,
+    output logic [31:0]         Mem_rd_address_o
     
 
 
@@ -80,12 +80,14 @@ module DM (
     logic               all_halted;
     logic               all_running;
     logic               reset_dmcontrol;
+    logic               reset_abstractcs_busy;
     logic [31:0]        dmcontrol_reset_value; 
     // logic [2:0]         abstractcs_cmderr;
-    logic               abstractcs_busy;
+  //  logic               abstractcs_busy;
     logic               wire_abstractcs_busy_cleared;
-    logic               wire_dmi_req_valid_write;
+  //  logic               wire_dmi_req_valid_write;
     logic               wire_command_address_true;
+    logic               wire_dmcontrol_address_true;    
     logic               request_for_command;
     logic               valid_command;
     logic               command_data_mux_sel;
@@ -93,12 +95,15 @@ module DM (
     logic               dmcontrol_data_mux_sel;
     logic [31:0]        dmcontrol_data_mux_out;
     logic [31:0]        dmcontrol_reset_value_mux_out;
-    logic               wire_dmi_req_valid_read;
+  //  logic               wire_dmi_req_valid_read;
+    logic               wire_dmstatus_address_true;
+    logic               wire_abstractcs_address_true;
     logic               rsp_dmstatus_mux_sel;
     logic [31:0]        rsp_dmstatus_mux_out;
     logic               rsp_abstractcs_mux_sel;
     logic [31:0]        rsp_abstractcs_mux_out;
     logic               wire_dmi_address_access_data0;
+    logic               wire_dmi_address_access_data1;
     logic               rsp_data0_mux_sel;
     logic [31:0]        rsp_data0_mux_out;
     logic               reg_data0_mux_sel;
@@ -111,44 +116,86 @@ module DM (
     logic [31:0]        Mem_rd_data0_mux_out;
     logic [31:0]        dmi_data1_mux_out;
     logic               dmi_data1_mux_sel;
-    logic               temp;
+    logic               command_written;
+    logic               abstractcs_busy;
+    logic               dm_reg_write;
+    logic [31:0]        resp_data;
+
+    // signals for DMI_RRC
+
+
+    logic               valid_reg_access_write;
+    logic               access_dm_reg_write;
+    logic               write_done_reg;
+    logic               valid_reg_access_read;
+    logic               read_done_reg;
+    logic               writing_enable;
+    logic               reset_write_done_reg;
+    logic               reading_enable;
+    logic               reset_read_done_reg;
     
-    assign temp =  dmi_resp_ready_i | dmi_hardreset_i | dmi_resp_error_o; // new
+    
+    logic               write_done_reg_mux_out;
+    logic               read_done_reg_mux_out;
+    
+
+
+
 
 
 
 
     assign dmcontrol_reset_value                = {2'b0, dmcontrol_reg[29:0]}; 
     assign wire_abstractcs_busy_cleared         = !(abstractcs_reg.busy);
-    assign wire_dmi_req_valid_write             = ( ( dmi_req_op_i == dmi_write ) & (dmi_req_valid_i)) ? 1 : 0;        
+  //  assign wire_dmi_req_valid_write             = ( ( dmi_req_op_i == dmi_write ) & (dmi_req_valid_i)) ? 1 : 0;        
     assign wire_command_address_true            = dmi_req_address_i == Command;     ///////// *************    address of command checking
-    assign request_for_command                  = wire_command_address_true & wire_dmi_req_valid_write;
-    assign command_data_mux_sel                 = ( (wire_dmi_req_valid_write) & (wire_command_address_true) ) & (wire_abstractcs_busy_cleared) ;
+    assign wire_dmcontrol_address_true          = dmi_req_address_i == DMControl;
+  //  assign request_for_command                  = wire_command_address_true & wire_dmi_req_valid_write;
+    assign command_data_mux_sel                 = writing_enable & wire_command_address_true;
     assign command_data_mux_out                 = command_data_mux_sel ? dmi_req_data_i : command;
-    assign dmcontrol_data_mux_sel               = (dmi_req_address_i == DMControl) & wire_dmi_req_valid_write;
+    assign dmcontrol_data_mux_sel               = (wire_dmcontrol_address_true) & writing_enable;
     assign dmcontrol_data_mux_out               = dmcontrol_data_mux_sel ? dmi_req_data_i : dmcontrol_reg;
     assign dmcontrol_reset_value_mux_out        = reset_dmcontrol ? dmcontrol_reset_value : dmcontrol_data_mux_out;
-    assign wire_dmi_req_valid_read              = ( dmi_req_op_i == dmi_read ) & dmi_req_valid_i ;
-    assign rsp_dmstatus_mux_sel                 = ( wire_dmi_req_valid_read ) & ( dmi_req_address_i == DMStatus );
+  //  assign wire_dmi_req_valid_read              = ( dmi_req_op_i == dmi_read ) & dmi_req_valid_i ;
+    assign wire_dmstatus_address_true           = dmi_req_address_i == DMStatus;
+    assign rsp_dmstatus_mux_sel                 = ( reading_enable ) & ( wire_dmstatus_address_true );
     assign rsp_dmstatus_mux_out                 = rsp_dmstatus_mux_sel ? dmstatus_reg : 32'd0 ;
-    assign rsp_abstractcs_mux_sel               = ( wire_dmi_req_valid_read ) & ( dmi_req_address_i == AbstractCS );
+    
+    assign wire_abstractcs_address_true         = dmi_req_address_i == AbstractCS;
+    assign rsp_abstractcs_mux_sel               = ( reading_enable ) & ( wire_abstractcs_address_true );
     assign rsp_abstractcs_mux_out               = rsp_abstractcs_mux_sel ? abstractcs_reg : rsp_dmstatus_mux_out;
     assign wire_dmi_address_access_data0        = ( dmi_req_address_i == Data0 );
-    assign rsp_data0_mux_sel                    = ( wire_dmi_req_valid_read & wire_dmi_address_access_data0 ) & (wire_abstractcs_busy_cleared) ;
+    assign rsp_data0_mux_sel                    = reading_enable & wire_dmi_address_access_data0;
     assign rsp_data0_mux_out                    = rsp_data0_mux_sel ? data_reg[0] : rsp_abstractcs_mux_out;
+    
+    
+    
     assign reg_data0_mux_sel                   = ( (!command.control.access_reg.write)&(abstractcs_reg.busy) ) & (command.control.access_reg.transfer) ;
     assign reg_data0_mux_out                   = reg_data0_mux_sel ? core_rd_wr_data_io : data_reg[0] ;
-    assign dmi_data0_mux_sel                    = ( wire_dmi_address_access_data0 & wire_dmi_req_valid_write ) & (wire_abstractcs_busy_cleared);
+    assign dmi_data0_mux_sel                    = wire_dmi_address_access_data0 & writing_enable ;
     assign dmi_data0_mux_out                    = dmi_data0_mux_sel ? dmi_req_data_i : reg_data0_mux_out ;
     assign Mem_rd_data0_mux_out                = Mem_rd_en ? core_rd_wr_data_io : dmi_data0_mux_out;
     assign resume_req                           = ( dmcontrol_reg.haltreq & dmcontrol_reg.resumereq) ? 0 : dmcontrol_reg.resumereq;    
-    assign dmi_data1_mux_sel                    =  ( ( dmi_req_address_i == 8'h04 ) & ( wire_dmi_req_valid_write ) ) & ( wire_abstractcs_busy_cleared );    
+    assign wire_dmi_address_access_data1        = dmi_req_address_i == Data0;
+    assign dmi_data1_mux_sel                    =  ( wire_dmi_address_access_data1 ) & ( writing_enable ) ;    
     assign dmi_data1_mux_out                    = dmi_data1_mux_sel ? dmi_req_data_i : data_reg[1];
 
 
 
-
-
+    assign command_written                      = wire_command_address_true & write_done_reg;
+    assign valid_command                        = command_written;
+    
+    assign abstractcs_busy                      = reset_abstractcs_busy ? 1'b0 : ( command_written ? 1'b1 : abstractcs_reg.busy );
+    assign write_done_reg_mux_out               = reset_write_done_reg ? 1'b0 : ( writing_enable ? 1'b1 : write_done_reg );
+    assign read_done_reg_mux_out               = reset_read_done_reg ? 1'b0 : ( reading_enable ? 1'b1 : read_done_reg );
+    assign valid_reg_access_write               = wire_dmcontrol_address_true | wire_command_address_true | wire_dmi_address_access_data0 | wire_dmi_address_access_data1;
+    assign valid_reg_access_read               = wire_dmstatus_address_true | wire_abstractcs_address_true | wire_dmi_address_access_data0;
+    assign access_dm_reg_write                  = ( wire_dmi_address_access_data0 | wire_dmi_address_access_data1 ) ? ( current_state == HALTED ) : dm_reg_write;
+    
+    
+    
+    
+    
 
     /////////////////////////////////////////////
     // **** inputs for state transitions **** //
@@ -242,8 +289,11 @@ module DM (
     // Sequential logic to transition states  //
     ///////////////////////////////////////////
 
-    always_ff @(posedge clk_i or negedge reset_i) begin
+    always_ff @(posedge clk_i or negedge reset_i or posedge dmi_hardreset_i) begin
         if (!reset_i) begin
+            current_state       <=      NORMAL_EXECUTION; 
+        end
+        else if (dmi_hardreset_i) begin
             current_state       <=      NORMAL_EXECUTION; 
         end
         else begin
@@ -265,11 +315,13 @@ module DM (
                 halt_req                = 0;
                 all_halted              = 0;
                 all_running             = 1;
-                abstractcs_busy         = 0;
+           //     abstractcs_busy         = 0;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 1;
             
             end
 
@@ -277,11 +329,13 @@ module DM (
                 halt_req                = 1;
                 all_halted              = 0;
                 all_running             = 0;
-                abstractcs_busy         = 0;
+           //     abstractcs_busy         = 0;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
 
             end
 
@@ -289,11 +343,13 @@ module DM (
                 halt_req                = 1;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 0;
+           //     abstractcs_busy         = 0;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 1;
             
             end
 
@@ -301,44 +357,52 @@ module DM (
                 halt_req                = 0;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 0;
+           //     abstractcs_busy         = 0;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 1;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
             end
 
             COMMAND_START: begin
                 halt_req                = 1;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 1;
+          //      abstractcs_busy         = 1;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
             end
 
             COMMAND_TRANSFER: begin
                 halt_req                = 1;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 1;
+          //      abstractcs_busy         = 1;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 1;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
             end
 
             COMMAND_DONE: begin
                 halt_req                = 1;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 1;
+         //       abstractcs_busy         = 1;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 1;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
             end
             
             
@@ -346,22 +410,26 @@ module DM (
                 halt_req                = 1;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 1;
+          //      abstractcs_busy         = 1;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
             end
             
             READING_MEM: begin
                 halt_req                = 1;
                 all_halted              = 1;
                 all_running             = 0;
-                abstractcs_busy         = 1;
+           //     abstractcs_busy         = 1;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 1;
+                dm_reg_write            = 0;
             end
 
 
@@ -369,11 +437,13 @@ module DM (
                 halt_req                = 0;
                 all_halted              = 0;
                 all_running             = 1;
-                abstractcs_busy         = 0;
+            //    abstractcs_busy         = 0;
                 // abstractcs_cmderr       = 0;
                 reset_dmcontrol         = 0;
+                reset_abstractcs_busy   = 0;
                 rd_wr_en                = 0;
                 Mem_rd_en               = 0;
+                dm_reg_write            = 0;
             end
         endcase
     end
@@ -385,9 +455,14 @@ module DM (
 
 
     // updating Registers
-    always @(posedge clk_i or negedge reset_i) begin
+    always @(posedge clk_i or negedge reset_i or posedge dmi_hardreset_i) begin
 
         if(!reset_i) begin 
+            dmstatus_reg <= 0;
+            abstractcs_reg <= 0;
+
+        end
+        else if(dmi_hardreset_i) begin 
             dmstatus_reg <= 0;
             abstractcs_reg <= 0;
 
@@ -399,7 +474,8 @@ module DM (
             dmstatus_reg.allresumeack           <=      core_resume_ack_i;
             abstractcs_reg.busy                 <=      abstractcs_busy;
             // abstractcs_reg.cmderr               <=      abstractcs_cmderr;  
-            valid_command                       <=      request_for_command;
+            
+            
 
         end
 
@@ -412,30 +488,69 @@ module DM (
 
     // ***************** DMI Write ****************
 
-    always @(posedge clk_i or negedge reset_i) begin
+    always @(posedge clk_i or negedge reset_i or posedge dmi_hardreset_i) begin
         if(!reset_i) begin
             dmcontrol_reg                   <=      0;
-            command                     <=      0;
+            command                         <=      0;
             data_reg[0]                     <=      0;
+            data_reg[1]                     <=      0;
+            write_done_reg                  <=      0;
+            read_done_reg                   <=      0;
+            resp_data                       <=      0;
+        end
+        else if(dmi_hardreset_i) begin
+            dmcontrol_reg                   <=      0;
+            command                         <=      0;
+            data_reg[0]                     <=      0;
+            data_reg[1]                     <=      0;
+            write_done_reg                  <=      0;
+            read_done_reg                   <=      0;
+            resp_data                       <=      0;
         end
         else begin
 
             dmcontrol_reg                   <=      dmcontrol_reset_value_mux_out;
-            command                     <=      command_data_mux_out;
+            command                         <=      command_data_mux_out;
             data_reg[0]                     <=      Mem_rd_data0_mux_out ;
-            data_reg[1]                     <=  dmi_data1_mux_out;  
+            data_reg[1]                     <=      dmi_data1_mux_out;  
+            write_done_reg                  <=      write_done_reg_mux_out;
+            read_done_reg                   <=      read_done_reg_mux_out;
+            resp_data                       <=      rsp_data0_mux_out;
 
         end
     end
 
 
+
+
+    // Instantiate DMI_RRC
+    DMI_RRC dmi_rrc_inst        (
+                                .clk_i                              (clk_i),
+                                .reset_i                            (reset_i),
+                                .dmi_req_valid_i                    (dmi_req_valid_i),
+                                .dmi_req_op_i                       (dmi_req_op_i),
+                                .dmi_hardreset_i                    (dmi_hardreset_i),
+                                .valid_reg_access_write_i           (valid_reg_access_write),
+                                .access_dm_reg_write_i              (access_dm_reg_write),
+                                .write_done_reg_i                   (write_done_reg),
+                                .valid_reg_access_read_i            (valid_reg_access_read),
+                                .read_done_reg_i                    (read_done_reg),
+                                .writing_enable_o                   (writing_enable),
+                                .dmi_resp_valid_o                   (dmi_resp_valid_o),
+                                .reset_write_done_reg_o             (reset_write_done_reg),
+                                .dmi_resp_error_o                   (dmi_resp_error_o),
+                                .reading_enable_o                   (reading_enable),
+                                .reset_read_done_reg_o              (reset_read_done_reg),
+                                .dmi_req_ready_o                    (dmi_req_ready_o)
+                                );
+
     /////////////////////////////////////////////
     // ************** Outputs *************** //
     ///////////////////////////////////////////
 
-    assign dmi_resp_data_o                   =       rsp_data0_mux_out;
-    assign dmi_resp_valid_o                  =      rsp_dmstatus_mux_sel;
-    assign dmi_req_ready_o                  =       !rsp_dmstatus_mux_sel;
+    assign dmi_resp_data_o                   =       resp_data;
+  //  assign dmi_resp_valid_o                  =   dmi_resp_valid   ;
+  //  assign dmi_req_ready_o                  =    dmi_req_ready   ;
     assign core_rd_wr_o                       =       command.control.access_reg.write;
     assign core_rd_wr_address_o               =       command.control.access_reg.regno[15:0];
     assign core_rd_wr_data_io                 =       command.control.access_reg.write ? data_reg[0] : 32'bz;
