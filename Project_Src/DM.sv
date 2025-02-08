@@ -36,6 +36,7 @@ module DM (
     input logic                 dmi_hardreset_i, // new
    
 
+    
     // DM response to DMI signals
     output logic                dmi_req_ready_o, 
     output logic                dmi_resp_valid_o,
